@@ -1,5 +1,5 @@
-import MilesAIApp from "@/components/MilesAIApp";
+import MilesAICockpit from "@/components/MilesAICockpit";
 
 export default function Home() {
-  return <MilesAIApp />;
+  return <MilesAICockpit />;
 }

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./cockpit.css";
 
 export const metadata: Metadata = {
-  title: "MilesAI",
-  description: "O especialista em pontos de todo pequeno agente de viagens.",
+  title: "MilesAI · Cockpit do agente",
+  description: "Clientes, viagens, ofertas e oportunidades em um cockpit de decisão para pequenas agências.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -13,4 +14,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-
