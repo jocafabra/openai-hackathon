@@ -35,7 +35,27 @@ Vídeos curtos da demonstração:
 - V2, 47s, com locução brasileira mais conversada e legendas sincronizadas: [`artifacts/milesai-demo-v2/MilesAI-demo-v2.mp4`](artifacts/milesai-demo-v2/MilesAI-demo-v2.mp4).
 - V3, 44s, captura de uso real sem áudio e sem legendas queimadas: [`artifacts/milesai-demo-v3/MilesAI-demo-v3-sem-audio.mp4`](artifacts/milesai-demo-v3/MilesAI-demo-v3-sem-audio.mp4). O roteiro separado está em [`legendas-v3.txt`](artifacts/milesai-demo-v3/legendas-v3.txt).
 
-Ambos usam capturas reais do cockpit e identificam explicitamente o Hub mock.
+Os três usam capturas reais do cockpit e identificam explicitamente o Hub mock.
+
+## Screenshots da demonstração
+
+Todas as telas abaixo foram capturadas do build Docker funcional. Os dados simulados aparecem identificados na interface.
+
+| Dashboard operacional | Cadastro de atendimento |
+|---|---|
+| [![Dashboard operacional](artifacts/milesai-demo/scenes/01-dashboard.jpg)](artifacts/milesai-demo/scenes/01-dashboard.jpg) | [![Cadastro de atendimento](artifacts/milesai-demo/scenes/02-cadastro.jpg)](artifacts/milesai-demo/scenes/02-cadastro.jpg) |
+
+| Carteira e valor do milheiro | Estratégia calculada |
+|---|---|
+| [![Carteira e valor do milheiro](artifacts/milesai-demo/scenes/03-carteira.jpg)](artifacts/milesai-demo/scenes/03-carteira.jpg) | [![Estratégia calculada](artifacts/milesai-demo/scenes/04-estrategia.jpg)](artifacts/milesai-demo/scenes/04-estrategia.jpg) |
+
+| Hub de voos com mock identificado | Central de oportunidades |
+|---|---|
+| [![Hub de voos](artifacts/milesai-demo/scenes/05-hub-mock.jpg)](artifacts/milesai-demo/scenes/05-hub-mock.jpg) | [![Central de oportunidades](artifacts/milesai-demo/scenes/06-oportunidades.jpg)](artifacts/milesai-demo/scenes/06-oportunidades.jpg) |
+
+| Página Como funciona | Dashboard mobile em 390 px |
+|---|---|
+| [![Página Como funciona](artifacts/milesai-demo/scenes/07-como-funciona.jpg)](artifacts/milesai-demo/scenes/07-como-funciona.jpg) | [![Dashboard mobile](artifacts/milesai-demo/scenes/08-dashboard-mobile.jpg)](artifacts/milesai-demo/scenes/08-dashboard-mobile.jpg) |
 
 ## Acessar com Docker
 
