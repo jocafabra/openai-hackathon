@@ -37,6 +37,10 @@ Vídeos curtos da demonstração:
 
 Os três usam capturas reais do cockpit e identificam explicitamente o Hub mock.
 
+Apresentação para o pitch de até 3 minutos:
+
+- 6 slides com notas do apresentador: [`artifacts/milesai-pitch/MilesAI-Pitch-3min.pptx`](artifacts/milesai-pitch/MilesAI-Pitch-3min.pptx).
+
 ## Screenshots da demonstração
 
 Todas as telas abaixo foram capturadas do build Docker funcional. Os dados simulados aparecem identificados na interface.
