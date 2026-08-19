@@ -70,6 +70,25 @@ pnpm build
 pnpm start
 ```
 
+### Rodar com Docker
+
+```bash
+docker compose up --build -d
+```
+
+Acesse <http://localhost:3107>. Para usar outra porta livre:
+
+```bash
+MILESAI_PORT=3110 docker compose up --build -d
+```
+
+Comandos úteis:
+
+```bash
+docker compose logs -f milesai
+docker compose down
+```
+
 ## Variáveis de ambiente
 
 ```dotenv
