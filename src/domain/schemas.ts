@@ -7,6 +7,8 @@ const money = z.number().nonnegative();
 export const travelerProfileSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  email: z.email().optional(),
+  phone: z.string().min(8).max(30).optional(),
   travelStyle: z.enum(["economy", "balance", "comfort"]),
   comfortLevel: z.number().int().min(1).max(10),
   flexibility: z.enum(["low", "medium", "high"]),
@@ -173,4 +175,3 @@ export const strategyResultSchema = z.object({
   generatedAt: z.string(),
   dataMode: z.literal("mock"),
 });
-

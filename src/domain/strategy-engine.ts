@@ -17,18 +17,20 @@ import type {
   StrategyResult,
 } from "./types";
 
-const beginnerExecutionSteps = [
-  "Confirme que a emissão de 220 mil milhas ainda está disponível.",
-  "Abra o aplicativo ou site da Livelo.",
-  "Procure “Transferir pontos”.",
-  "Escolha TAP Miles&Go.",
-  "Informe 120 mil pontos.",
-  "Confirme que a campanha de 90% está selecionada.",
-  "Antes de concluir, confira nome, CPF e número TAP do cliente.",
-  "Faça a transferência somente após essa conferência.",
-  "Emita o trecho internacional.",
-  "Compre o trecho FLN → GRU separadamente.",
-];
+function executionSteps(input: StrategyInput, offer: AwardOffer | undefined) {
+  return [
+    `Confirme que a emissão de ${(offer?.miles ?? 0).toLocaleString("pt-BR")} milhas ainda está disponível.`,
+    `Abra o aplicativo ou site da ${input.strategy.sourceProgram}.`,
+    "Procure “Transferir pontos”.",
+    `Escolha ${input.strategy.targetProgram}.`,
+    `Informe ${input.strategy.plannedSourcePoints.toLocaleString("pt-BR")} pontos.`,
+    `Confirme que a campanha de ${input.promotion.bonusPercent}% está selecionada.`,
+    `Antes de concluir, confira os dados de ${input.traveler.name} e o número no programa de destino.`,
+    "Faça a transferência somente após essa conferência.",
+    "Revalide o preço, as taxas e a disponibilidade.",
+    `Emita a viagem ${input.trip.origin} → ${input.trip.destination}.`,
+  ];
+}
 
 function validateInput(input: StrategyInput): StrategyInput {
   return {
@@ -69,7 +71,7 @@ function cashOption(input: StrategyInput, offer: CashOffer | undefined): OptionR
     reasons: eligible
       ? ["Compra simples e imediata, sem consumir pontos."]
       : ["Não há uma oferta em dinheiro compatível disponível."],
-    assumptions: ["Tarifa total para duas pessoas com taxas nos dados simulados."],
+    assumptions: [`Tarifa total para ${input.trip.passengers} passageiro(s), conforme a fonte informada.`],
     dataSource: offer?.source ?? "mock_hackathon_dataset",
     observedAt: offer?.observedAt ?? input.now,
   };
@@ -102,6 +104,7 @@ function pointsOption(
   const promotionCompatible = (
     input.promotion.sourceProgram === input.strategy.sourceProgram
     && input.promotion.targetProgram === input.strategy.targetProgram
+    && new Date(input.promotion.startsAt).getTime() <= new Date(input.now).getTime()
     && new Date(input.promotion.endsAt).getTime() >= new Date(input.now).getTime()
   );
   const hasBalance = Boolean(wallet && wallet.balance >= sourcePoints);
@@ -113,7 +116,7 @@ function pointsOption(
 
   const reasons: string[] = [];
   if (!targetAvailable) reasons.push("A emissão-alvo está indisponível; não transfira pontos.");
-  if (!hasBalance) reasons.push("O saldo Livelo não cobre os pontos de origem necessários.");
+  if (!hasBalance) reasons.push(`O saldo ${input.strategy.sourceProgram} não cobre os pontos de origem necessários.`);
   if (!economicallySound) reasons.push("O custo econômico dos pontos supera a compra em dinheiro.");
   if (eligible && input.promotion.bonusPercent < input.strategy.minimumBonusPercent) {
     reasons.push(`O bônus atual de ${input.promotion.bonusPercent}% está abaixo da meta de ${input.strategy.minimumBonusPercent}%.`);
@@ -121,12 +124,12 @@ function pointsOption(
   if (eligible && input.promotion.bonusPercent >= input.strategy.minimumBonusPercent) {
     reasons.push(`A promoção de ${input.promotion.bonusPercent}% atingiu a condição monitorada.`);
   }
-  reasons.push(`A transferência planejada de 120 mil pontos geraria ${plannedResultingMiles.toLocaleString("pt-BR")} milhas.`);
+  reasons.push(`A transferência planejada de ${input.strategy.plannedSourcePoints.toLocaleString("pt-BR")} pontos geraria ${plannedResultingMiles.toLocaleString("pt-BR")} milhas.`);
 
   const option: OptionResult = {
-    id: "transfer_livelo_tap",
+    id: `transfer_${input.strategy.sourceProgram}_${input.strategy.targetProgram}`.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
     kind: "own_points",
-    label: "Transferir Livelo para TAP",
+    label: `Transferir ${input.strategy.sourceProgram} para ${input.strategy.targetProgram}`,
     eligible,
     cashOutlayBRL: roundBRL(cashOutlay),
     economicCostBRL: roundBRL(economicCost),
@@ -136,8 +139,8 @@ function pointsOption(
     score: 0,
     reasons,
     assumptions: [
-      `${offer?.miles ?? 0} milhas para duas pessoas na emissão-alvo simulada.`,
-      `Pontos Livelo avaliados em R$ ${wallet?.referenceValuePer1000BRL ?? 0} por mil.`,
+      `${offer?.miles ?? 0} milhas para ${input.trip.passengers} passageiro(s), conforme a oferta informada.`,
+      `Pontos ${input.strategy.sourceProgram} avaliados em R$ ${wallet?.referenceValuePer1000BRL ?? 0} por mil.`,
     ],
     dataSource: offer?.source ?? "mock_hackathon_dataset",
     observedAt: offer?.observedAt ?? input.now,
@@ -202,7 +205,7 @@ function brokerOption(
 
 function watchCondition(input: StrategyInput) {
   return {
-    id: "watch_italy_2027",
+    id: `watch_${input.traveler.id}_${input.trip.id}`,
     travelerId: input.traveler.id,
     tripId: input.trip.id,
     condition: {
@@ -217,9 +220,19 @@ function watchCondition(input: StrategyInput) {
 
 export function calculateStrategy(rawInput: StrategyInput): StrategyResult {
   const input = validateInput(rawInput);
-  const cashOffer = input.offers.find((offer): offer is CashOffer => offer.kind === "cash");
-  const awardOffer = input.offers.find((offer): offer is AwardOffer => offer.kind === "award");
-  const brokerOffer = input.offers.find((offer): offer is MilesBrokerOffer => offer.kind === "miles_broker");
+  const cashOffer = input.offers
+    .filter((offer): offer is CashOffer => offer.kind === "cash")
+    .sort((a, b) => a.totalBRL - b.totalBRL)[0];
+  const awardOffer = input.offers
+    .filter((offer): offer is AwardOffer => offer.kind === "award" && offer.program === input.strategy.targetProgram)
+    .sort((a, b) => (a.miles + a.taxesBRL) - (b.miles + b.taxesBRL))[0];
+  const brokerOffer = input.offers
+    .filter((offer): offer is MilesBrokerOffer => offer.kind === "miles_broker" && offer.program === input.strategy.targetProgram)
+    .sort((a, b) => {
+      const costA = (a.miles / 1_000) * a.pricePer1000BRL + a.taxesBRL + a.positioningFlightBRL;
+      const costB = (b.miles / 1_000) * b.pricePer1000BRL + b.taxesBRL + b.positioningFlightBRL;
+      return costA - costB;
+    })[0];
   const cash = cashOption(input, cashOffer);
   const points = pointsOption(input, awardOffer, cash.economicCostBRL);
   const broker = brokerOption(input, brokerOffer, awardOffer, cash.economicCostBRL);
@@ -257,13 +270,13 @@ export function calculateStrategy(rawInput: StrategyInput): StrategyResult {
       action: "WAIT",
       confidence: "high",
       recommendedOptionId: points.id,
-      summary: `Não transfira agora. O bônus atual de ${input.promotion.bonusPercent}% está abaixo da meta e a transferência planejada não gera as 220 mil milhas.`,
+      summary: `Não transfira agora. O bônus atual de ${input.promotion.bonusPercent}% está abaixo da meta para a emissão de ${(awardOffer?.miles ?? 0).toLocaleString("pt-BR")} milhas.`,
       options,
-      nextStep: `Monitorar bônus Livelo para TAP de pelo menos ${input.strategy.minimumBonusPercent}%.`,
+      nextStep: `Monitorar bônus ${input.strategy.sourceProgram} → ${input.strategy.targetProgram} de pelo menos ${input.strategy.minimumBonusPercent}%.`,
       watchCondition: watchCondition(input),
       beginnerSteps: [
         "Não transfira pontos agora.",
-        `Aguarde uma promoção Livelo → TAP de pelo menos ${input.strategy.minimumBonusPercent}%.`,
+        `Aguarde uma promoção ${input.strategy.sourceProgram} → ${input.strategy.targetProgram} de pelo menos ${input.strategy.minimumBonusPercent}%.`,
         "Confirme a emissão antes de qualquer transferência.",
       ],
       assumptions,
@@ -281,7 +294,7 @@ export function calculateStrategy(rawInput: StrategyInput): StrategyResult {
       summary: `A promoção de ${input.promotion.bonusPercent}% atingiu a condição. Confirme a emissão e execute a primeira etapa.`,
       options,
       nextStep: "Confirme a disponibilidade da emissão e execute a transferência antes do prazo.",
-      beginnerSteps: beginnerExecutionSteps,
+      beginnerSteps: executionSteps(input, awardOffer),
       assumptions,
       generatedAt: input.now,
       dataMode: "mock",
@@ -312,4 +325,3 @@ export function calculateStrategy(rawInput: StrategyInput): StrategyResult {
     dataMode: "mock",
   });
 }
-

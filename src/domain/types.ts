@@ -6,6 +6,8 @@ export type Risk = "low" | "medium" | "high";
 export interface TravelerProfile {
   id: string;
   name: string;
+  email?: string;
+  phone?: string;
   travelStyle: "economy" | "balance" | "comfort";
   comfortLevel: number;
   flexibility: "low" | "medium" | "high";
@@ -179,4 +181,3 @@ export interface PromotionReplayResult {
   event: TransferPromotion;
   affectedTravelerIds: string[];
 }
-
