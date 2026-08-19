@@ -1,9 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import MilesAIDashboard from "@/components/MilesAIDashboard";
+import { replaceWalletBalances } from "@/domain/wallet";
+import type { Wallet } from "@/domain/types";
 
 type JsonObject = Record<string, unknown>;
-type View = "clients" | "opportunities" | "flights";
+type View = "dashboard" | "clients" | "opportunities" | "flights";
 type DataMode = "live" | "mock" | "manual";
 
 type CaseRecord = {
@@ -102,6 +106,18 @@ type CaseDraft = {
   referenceValue: string;
 };
 
+type WalletBalanceDraft = {
+  id: string;
+  program: string;
+  balance: string;
+  referenceValue: string;
+  expiresAt: string;
+  source: string;
+  updatedAt: string;
+};
+
+const walletPrograms = ["Livelo", "Esfera", "Smiles", "LATAM Pass", "Azul Fidelidade", "TAP Miles&Go", "Flying Blue", "Iberia Plus"];
+
 const emptyDraft: CaseDraft = {
   name: "",
   email: "",
@@ -159,9 +175,12 @@ function normalizeCase(value: unknown, index: number): CaseRecord {
   const client = pickObject(input, ["traveler", "client", "profile"]);
   const trip = pickObject(input, ["trip", "travelRequest", "request"]);
   const wallet = pickObject(input, ["wallet"]);
+  const strategy = pickObject(input, ["strategy"]);
   const departureWindow = pickObject(trip, ["departureWindow"]);
   const balances = Array.isArray(wallet.balances) ? wallet.balances : Array.isArray(root.balances) ? root.balances : [];
-  const firstBalance = isObject(balances[0]) ? balances[0] : {};
+  const primaryProgram = textValue(strategy.sourceProgram);
+  const primaryBalance = balances.find((balance) => isObject(balance) && textValue(balance.program) === primaryProgram);
+  const firstBalance = isObject(primaryBalance) ? primaryBalance : isObject(balances[0]) ? balances[0] : {};
   return {
     id: textValue(root.id, root.caseId, root.slug) || `case-${index}`,
     name: textValue(root.name, root.clientName, client.name, client.travelerName) || "Cliente sem nome",
@@ -242,15 +261,25 @@ function caseInputOf(item: CaseRecord): JsonObject | null {
   return item.raw.input;
 }
 
+function dateInputValue(value: unknown) {
+  return textValue(value).slice(0, 10);
+}
+
+function walletDraftsOf(wallet: JsonObject): WalletBalanceDraft[] {
+  const balances = Array.isArray(wallet.balances) ? wallet.balances.filter(isObject) : [];
+  return balances.map((balance, index) => ({
+    id: `${index}-${textValue(balance.program) || "programa"}`,
+    program: textValue(balance.program),
+    balance: String(numberValue(balance.balance)),
+    referenceValue: String(numberValue(balance.referenceValuePer1000BRL)),
+    expiresAt: dateInputValue(balance.expiresAt),
+    source: textValue(balance.source, wallet.source) || "Cadastro manual pelo agente",
+    updatedAt: dateInputValue(balance.updatedAt) || new Date().toISOString().slice(0, 10),
+  }));
+}
+
 function Brand() {
-  return <span className="cockpit-brandmark" aria-hidden="true">
-    <svg viewBox="0 0 48 48" role="img">
-      <path className="brandmark-ring" d="M36.8 9.9A18.2 18.2 0 1 0 42 26.8" />
-      <path className="brandmark-route" d="M13.5 29.6c6.1-1.1 8.1-10 13.2-11.1 3.4-.8 5.2 2.2 8.8 1.4" />
-      <circle cx="13.2" cy="29.8" r="2.5" />
-      <path className="brandmark-spark" d="M36.8 10v7.1M33.2 13.5h7.2" />
-    </svg>
-  </span>;
+  return <span className="cockpit-brandmark" aria-hidden="true"><Image src="/brand/milesai-mark-light.png" width={48} height={48} alt="" priority /></span>;
 }
 
 function ModeBadge({ mode }: { mode: DataMode }) {
@@ -270,9 +299,11 @@ function Navigation({ view, setView, counts }: { view: View; setView: (view: Vie
     <aside className="cockpit-sidebar">
       <div className="cockpit-logo"><Brand /><div><strong>MilesAI</strong><span>travel intelligence</span></div></div>
       <nav aria-label="Navegação principal">
+        <button type="button" className={view === "dashboard" ? "is-active" : ""} onClick={() => setView("dashboard")}><span>◈</span><b>Visão geral</b></button>
         <button type="button" className={view === "clients" ? "is-active" : ""} onClick={() => setView("clients")}><span>⌂</span><b>Clientes</b><em>{counts.clients}</em></button>
         <button type="button" className={view === "opportunities" ? "is-active" : ""} onClick={() => setView("opportunities")}><span>✦</span><b>Oportunidades</b><em>{counts.opportunities}</em></button>
         <button type="button" className={view === "flights" ? "is-active" : ""} onClick={() => setView("flights")}><span>↗</span><b>Hub de voos</b></button>
+        <a href="/como-funciona"><span>?</span><b>Como funciona</b></a>
       </nav>
       <div className="cockpit-sidebar__note"><i /><div><b>Motor operacional</b><span>Pronto com fallback inteligente</span></div></div>
       <footer><span>AMBIENTE DE DEMO</span><b><i /> Operação local</b></footer>
@@ -281,7 +312,7 @@ function Navigation({ view, setView, counts }: { view: View; setView: (view: Vie
 }
 
 function Topbar({ view, onNew, onRefresh, refreshing }: { view: View; onNew: () => void; onRefresh: () => void; refreshing: boolean }) {
-  const titles = { clients: ["Carteira de clientes", "Organize viagens e decida o melhor caminho"], opportunities: ["Radar de oportunidades", "O que pede ação agora, em uma única fila"], flights: ["Hub de voos", "Pesquise, compare e leve uma oferta à simulação"] };
+  const titles = { dashboard: ["Visão geral", "O que merece atenção hoje"], clients: ["Carteira de clientes", "Organize viagens e decida o melhor caminho"], opportunities: ["Radar de oportunidades", "O que pede ação agora, em uma única fila"], flights: ["Hub de voos", "Pesquise, compare e leve uma oferta à simulação"] };
   return <header className="cockpit-topbar"><div><span><i /> OPERAÇÃO MILESAI</span><h1>{titles[view][0]}</h1><p>{titles[view][1]}</p></div><div className="cockpit-topbar__actions"><button type="button" className="cockpit-icon-button" onClick={onRefresh} disabled={refreshing} aria-label={refreshing ? "Atualizando dados" : "Atualizar dados"}>↻</button><button type="button" className="cockpit-primary" onClick={onNew}><span>＋</span>Novo atendimento</button></div></header>;
 }
 
@@ -295,16 +326,16 @@ function SummaryCards({ cases, opportunities }: { cases: CaseRecord[]; opportuni
   </section>;
 }
 
-function ClientCard({ item, selected, onEvaluate, evaluating }: { item: CaseRecord; selected: boolean; onEvaluate: () => void; evaluating: boolean }) {
+function ClientCard({ item, selected, onEvaluate, onWallet, evaluating }: { item: CaseRecord; selected: boolean; onEvaluate: () => void; onWallet: () => void; evaluating: boolean }) {
   return <article className={`cockpit-client-card ${selected ? "is-selected" : ""}`}>
     <div className="cockpit-client-card__identity"><span>{item.name.slice(0, 1).toUpperCase()}</span><div><h3>{item.name}</h3><p>{item.email || item.phone || "Contato não informado"}</p></div><i className="cockpit-health" title="Cadastro ativo" /></div>
     <div className="cockpit-route"><div><small>ORIGEM</small><b>{item.origin}</b></div><span><i />→<i /></span><div><small>DESTINO</small><b>{item.destination}</b></div></div>
     <dl><div><dt>Embarque</dt><dd>{formatDate(item.departureDate)}</dd></div><div><dt>Viajantes</dt><dd>{item.passengers}</dd></div><div><dt>Carteira</dt><dd>{formatNumber(item.balance)} {item.program}</dd></div></dl>
-    <footer><span><i />{item.source} · {formatDate(item.updatedAt, true)}</span><button type="button" onClick={onEvaluate} disabled={evaluating}>{evaluating ? "Calculando…" : "Simular estratégia"}<b>→</b></button></footer>
+    <footer><span><i />{item.source} · {formatDate(item.updatedAt, true)}</span><div className="cockpit-client-card__actions"><button type="button" className="is-wallet" onClick={onWallet}>Editar carteira</button><button type="button" onClick={onEvaluate} disabled={evaluating}>{evaluating ? "Calculando…" : "Simular estratégia"}<b>→</b></button></div></footer>
   </article>;
 }
 
-function EvaluationPanel({ evaluation, caseRecord, loading, onClose, onEdit }: { evaluation: Evaluation | null; caseRecord?: CaseRecord; loading: boolean; onClose: () => void; onEdit: () => void }) {
+function EvaluationPanel({ evaluation, caseRecord, loading, onClose, onEdit, onWallet }: { evaluation: Evaluation | null; caseRecord?: CaseRecord; loading: boolean; onClose: () => void; onEdit: () => void; onWallet: () => void }) {
   if (!loading && !evaluation) return null;
   const options = evaluation?.options ?? [];
   return <section className="cockpit-evaluation" aria-live="polite">
@@ -312,18 +343,18 @@ function EvaluationPanel({ evaluation, caseRecord, loading, onClose, onEdit }: {
     {loading ? <LoadingBlock label="Comparando dinheiro, pontos e milhas…" /> : <>
       <div className="cockpit-decision"><div><small>DECISÃO DO MOTOR</small><strong>{decisionLabel[evaluation?.decision || ""] || evaluation?.decision || "Estratégia calculada"}</strong><p>{evaluation?.summary || "Cenário recalculado com os dados atuais."}</p></div><ModeBadge mode={evaluation?.dataMode === "live" ? "live" : "mock"} /></div>
       {options.length > 0 && <div className="cockpit-option-grid">{options.map((option, index) => <article key={option.id || `${option.kind}-${index}`} className={option.id && option.id === evaluation?.recommendedOptionId ? "is-best" : ""}><span>{option.label || option.kind || `Opção ${index + 1}`}</span><strong>{formatBRL(option.cashOutlayBRL)}</strong><small>desembolso agora</small><dl><div><dt>Custo econômico</dt><dd>{formatBRL(option.economicCostBRL)}</dd></div><div><dt>Economia</dt><dd>{formatBRL(option.savingsVsCashBRL)}</dd></div></dl><p>{option.reasons?.[0] || "Calculado pelo motor determinístico."}</p><footer>{option.dataSource || "Motor MilesAI"} · {formatDate(option.observedAt, true)}</footer></article>)}</div>}
-      <div className="cockpit-next-step"><span>PRÓXIMO PASSO</span><p>{evaluation?.nextStep || "Revise os dados antes de executar qualquer transferência."}</p><small>Gerado em {formatDate(evaluation?.generatedAt, true)}</small><button onClick={onEdit}>Ajustar oferta, taxas e bônus <b>→</b></button></div>
+      <div className="cockpit-next-step"><span>PRÓXIMO PASSO</span><p>{evaluation?.nextStep || "Revise os dados antes de executar qualquer transferência."}</p><small>Gerado em {formatDate(evaluation?.generatedAt, true)}</small><div className="cockpit-next-step__actions"><button onClick={onWallet}>Editar carteira e milheiro</button><button onClick={onEdit}>Ajustar oferta, taxas e bônus <b>→</b></button></div></div>
     </>}
   </section>;
 }
 
-function ClientsView({ cases, opportunities, loading, selectedId, onEvaluate, evaluatingId, onNew }: { cases: CaseRecord[]; opportunities: Opportunity[]; loading: boolean; selectedId?: string; onEvaluate: (item: CaseRecord) => void; evaluatingId?: string; onNew: () => void }) {
+function ClientsView({ cases, opportunities, loading, selectedId, onEvaluate, onWallet, evaluatingId, onNew }: { cases: CaseRecord[]; opportunities: Opportunity[]; loading: boolean; selectedId?: string; onEvaluate: (item: CaseRecord) => void; onWallet: (item: CaseRecord) => void; evaluatingId?: string; onNew: () => void }) {
   const [query, setQuery] = useState("");
   const filtered = cases.filter((item) => `${item.name} ${item.origin} ${item.destination} ${item.program}`.toLowerCase().includes(query.toLowerCase()));
   return <>
     <SummaryCards cases={cases} opportunities={opportunities} />
     <section className="cockpit-section-heading"><div><span>CARTEIRA</span><h2>Atendimentos em andamento</h2></div><label className="cockpit-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar cliente, rota ou programa" /></label></section>
-    {loading ? <LoadingBlock label="Carregando sua carteira…" /> : filtered.length === 0 ? <EmptyState icon="◎" title={query ? "Nenhum cliente encontrado" : "Comece pelo primeiro cliente"} copy={query ? "Tente outro nome, aeroporto ou programa." : "Cadastre cliente, viagem e carteira em menos de dois minutos."} action={!query && <button type="button" className="cockpit-primary" onClick={onNew}>Cadastrar cliente</button>} /> : <div className="cockpit-client-grid">{filtered.map((item) => <ClientCard key={item.id} item={item} selected={selectedId === item.id} onEvaluate={() => onEvaluate(item)} evaluating={evaluatingId === item.id} />)}</div>}
+    {loading ? <LoadingBlock label="Carregando sua carteira…" /> : filtered.length === 0 ? <EmptyState icon="◎" title={query ? "Nenhum cliente encontrado" : "Comece pelo primeiro cliente"} copy={query ? "Tente outro nome, aeroporto ou programa." : "Cadastre cliente, viagem e carteira em menos de dois minutos."} action={!query && <button type="button" className="cockpit-primary" onClick={onNew}>Cadastrar cliente</button>} /> : <div className="cockpit-client-grid">{filtered.map((item) => <ClientCard key={item.id} item={item} selected={selectedId === item.id} onEvaluate={() => onEvaluate(item)} onWallet={() => onWallet(item)} evaluating={evaluatingId === item.id} />)}</div>}
   </>;
 }
 
@@ -464,6 +495,90 @@ function PromotionDrawer({ cases, onClose, onSaved }: { cases: CaseRecord[]; onC
   return <div className="cockpit-overlay" onMouseDown={onClose}><section className="cockpit-drawer cockpit-drawer--compact" role="dialog" aria-modal="true" aria-labelledby="promotion-title" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="cockpit-drawer__close" onClick={onClose} aria-label="Fechar promoção">×</button><header><span>EVENTO DE MONITORAMENTO</span><h2 id="promotion-title">Registrar promoção</h2><p>O motor recalcula os casos afetados e cria oportunidades quando a condição fizer sentido.</p></header><div className="cockpit-drawer__form"><label>Preencher programas a partir de<select value={caseId} onChange={(event) => chooseCase(event.target.value)}><option value="">Informar manualmente</option>{cases.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label><div className="cockpit-form-pair"><label>Programa de origem<input value={sourceProgram} onChange={(event) => setSourceProgram(event.target.value)} /></label><label>Programa de destino<input value={targetProgram} onChange={(event) => setTargetProgram(event.target.value)} /></label></div><label>Bônus de transferência<div className="cockpit-percent-input"><input type="number" min="0" max="300" value={bonusPercent} onChange={(event) => setBonusPercent(Number(event.target.value))} /><span>%</span></div></label><div className="cockpit-source-note"><ModeBadge mode="manual" /><p>Origem: cadastro manual · o evento será cruzado com todos os casos compatíveis.</p></div></div>{error && <div className="cockpit-inline-error"><b>Ops.</b> {error}</div>}<footer className="cockpit-drawer__actions"><button type="button" className="cockpit-secondary" onClick={onClose}>Cancelar</button><button type="button" className="cockpit-primary" onClick={save} disabled={loading || bonusPercent <= 0}>{loading ? "Processando…" : "Registrar e recalcular"}<span>✦</span></button></footer></section></div>;
 }
 
+function WalletDrawer({ item, onClose, onSaved }: { item: CaseRecord; onClose: () => void; onSaved: (updated: CaseRecord) => void }) {
+  const input = caseInputOf(item);
+  const wallet = input ? pickObject(input, ["wallet"]) : {};
+  const strategy = input ? pickObject(input, ["strategy"]) : {};
+  const promotion = input ? pickObject(input, ["promotion"]) : {};
+  const initialRows = walletDraftsOf(wallet);
+  const [rows, setRows] = useState<WalletBalanceDraft[]>(initialRows.length ? initialRows : [{
+    id: "new-program",
+    program: "Livelo",
+    balance: "0",
+    referenceValue: "20",
+    expiresAt: "",
+    source: "Cadastro manual pelo agente",
+    updatedAt: new Date().toISOString().slice(0, 10),
+  }]);
+  const [primaryProgram, setPrimaryProgram] = useState(textValue(strategy.sourceProgram) || initialRows[0]?.program || "Livelo");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function updateRow(id: string, patch: Partial<WalletBalanceDraft>) {
+    setRows((current) => current.map((row) => row.id === id ? { ...row, ...patch } : row));
+  }
+
+  function addRow() {
+    const program = walletPrograms.find((candidate) => !rows.some((row) => row.program.toLocaleLowerCase("pt-BR") === candidate.toLocaleLowerCase("pt-BR"))) || "Outro programa";
+    setRows((current) => [...current, {
+      id: crypto.randomUUID(),
+      program,
+      balance: "0",
+      referenceValue: "20",
+      expiresAt: "",
+      source: "Cadastro manual pelo agente",
+      updatedAt: new Date().toISOString().slice(0, 10),
+    }]);
+  }
+
+  function removeRow(id: string) {
+    if (rows.length === 1) return;
+    const removing = rows.find((row) => row.id === id);
+    const remaining = rows.filter((row) => row.id !== id);
+    setRows(remaining);
+    if (removing?.program === primaryProgram) setPrimaryProgram(remaining[0]?.program || "");
+  }
+
+  async function save() {
+    if (!input) { setError("Este caso não possui uma carteira editável."); return; }
+    const normalizedPrograms = rows.map((row) => row.program.trim().toLocaleLowerCase("pt-BR"));
+    if (rows.some((row) => !row.program.trim())) { setError("Informe o nome de todos os programas."); return; }
+    if (new Set(normalizedPrograms).size !== normalizedPrograms.length) { setError("Cada programa pode aparecer apenas uma vez na carteira."); return; }
+    if (rows.some((row) => !Number.isInteger(Number(row.balance)) || Number(row.balance) < 0)) { setError("Os saldos precisam ser números inteiros maiores ou iguais a zero."); return; }
+    if (rows.some((row) => !Number.isFinite(Number(row.referenceValue)) || Number(row.referenceValue) <= 0)) { setError("Informe um preço de milheiro maior que zero para cada programa."); return; }
+    if (!rows.some((row) => row.program === primaryProgram)) { setError("Escolha qual programa será usado como origem no cálculo."); return; }
+
+    setLoading(true); setError(null);
+    const observedAt = new Date().toISOString();
+    const currentWallet: Wallet = {
+      travelerId: textValue(wallet.travelerId),
+      source: textValue(wallet.source) || "Cadastro manual pelo agente",
+      balances: [],
+    };
+    const nextWallet = replaceWalletBalances(currentWallet, rows.map((row) => ({
+      program: row.program,
+      balance: Number(row.balance),
+      referenceValuePer1000BRL: Number(row.referenceValue),
+      expiresAt: row.expiresAt || null,
+      source: row.source,
+      updatedAt: row.updatedAt || observedAt,
+    })), { source: "Carteira editada manualmente pelo agente", observedAt });
+    const previousPrimary = textValue(strategy.sourceProgram);
+    const nextStrategy = { ...strategy, sourceProgram: primaryProgram };
+    const nextPromotion = textValue(promotion.sourceProgram) === previousPrimary
+      ? { ...promotion, sourceProgram: primaryProgram }
+      : promotion;
+    const nextInput = { ...input, wallet: nextWallet, strategy: nextStrategy, promotion: nextPromotion, now: observedAt };
+    try {
+      const updated = normalizeCase(await readJson(await fetch(`/api/cases/${encodeURIComponent(item.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input: nextInput }) })), Date.now());
+      onSaved(updated);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Não foi possível salvar a carteira."); }
+    finally { setLoading(false); }
+  }
+
+  return <div className="cockpit-overlay" onMouseDown={onClose}><section className="cockpit-drawer cockpit-drawer--wallet" role="dialog" aria-modal="true" aria-labelledby="wallet-title" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="cockpit-drawer__close" onClick={onClose} aria-label="Fechar carteira">×</button><header><span>CARTEIRA DO CLIENTE</span><h2 id="wallet-title">Saldos e preço do milheiro</h2><p>Cadastre cada programa com o custo de referência usado pelo motor. A fonte e a data ficam visíveis para conferência.</p></header><div className="cockpit-drawer__form"><label>Programa usado na estratégia<select value={primaryProgram} onChange={(event) => setPrimaryProgram(event.target.value)}>{rows.map((row) => <option value={row.program} key={row.id}>{row.program || "Programa sem nome"}</option>)}</select><small className="cockpit-field-help">O motor usa o saldo e o preço deste programa para calcular o custo econômico.</small></label><div className="cockpit-wallet-list">{rows.map((row, index) => <article className="cockpit-wallet-row" key={row.id}><header><div><span>PROGRAMA {index + 1}</span><b>{row.program || "Novo programa"}</b></div><button type="button" onClick={() => removeRow(row.id)} disabled={rows.length === 1} aria-label={`Remover ${row.program || `programa ${index + 1}`}`}>Remover</button></header><label>Programa<input list="milesai-wallet-programs" value={row.program} onChange={(event) => { const program = event.target.value; updateRow(row.id, { program }); if (primaryProgram === row.program) setPrimaryProgram(program); }} placeholder="Ex.: Livelo" /></label><div className="cockpit-form-pair"><label>Saldo disponível<input type="number" min="0" step="1" value={row.balance} onChange={(event) => updateRow(row.id, { balance: event.target.value })} /></label><label>Preço do milheiro (R$)<input type="number" min="0.01" step="0.01" value={row.referenceValue} onChange={(event) => updateRow(row.id, { referenceValue: event.target.value })} /></label></div><div className="cockpit-form-pair"><label>Atualizado em<input type="date" value={row.updatedAt} onInput={(event) => updateRow(row.id, { updatedAt: event.currentTarget.value })} onChange={(event) => updateRow(row.id, { updatedAt: event.target.value })} /></label><label>Validade dos pontos (opcional)<input type="date" value={row.expiresAt} onInput={(event) => updateRow(row.id, { expiresAt: event.currentTarget.value })} onChange={(event) => updateRow(row.id, { expiresAt: event.target.value })} /></label></div><label>Fonte do saldo e do preço<input value={row.source} onChange={(event) => updateRow(row.id, { source: event.target.value })} placeholder="Ex.: extrato enviado pelo cliente" /></label></article>)}</div><datalist id="milesai-wallet-programs">{walletPrograms.map((program) => <option value={program} key={program} />)}</datalist><button type="button" className="cockpit-wallet-add" onClick={addRow}>＋ Adicionar outro programa</button><div className="cockpit-source-note"><ModeBadge mode="manual" /><p>A edição salva um novo snapshot da carteira e recalcula a recomendação sem realizar transferências.</p></div></div>{error && <div className="cockpit-inline-error" role="alert"><b>Não salvou.</b> {error}</div>}<footer className="cockpit-drawer__actions"><button type="button" className="cockpit-secondary" onClick={onClose}>Cancelar</button><button type="button" className="cockpit-primary" disabled={loading} onClick={save}>{loading ? "Salvando…" : "Salvar e recalcular"}<span>→</span></button></footer></section></div>;
+}
+
 function ScenarioDrawer({ item, onClose, onSaved }: { item: CaseRecord; onClose: () => void; onSaved: (updated: CaseRecord) => void }) {
   const input = caseInputOf(item);
   const offers = input && Array.isArray(input.offers) ? input.offers.filter(isObject) : [];
@@ -471,13 +586,18 @@ function ScenarioDrawer({ item, onClose, onSaved }: { item: CaseRecord; onClose:
   const initialCash = offers.find((offer) => offer.kind === "cash") || {};
   const promotion = input ? pickObject(input, ["promotion"]) : {};
   const wallet = input ? pickObject(input, ["wallet"]) : {};
+  const strategy = input ? pickObject(input, ["strategy"]) : {};
   const balances = Array.isArray(wallet.balances) ? wallet.balances.filter(isObject) : [];
+  const activeProgram = textValue(strategy.sourceProgram, balances[0]?.program) || "programa principal";
+  const activeBalanceIndex = Math.max(0, balances.findIndex((balance) => textValue(balance.program) === activeProgram));
+  const activeBalance = balances[activeBalanceIndex] || {};
   const [cashTotal, setCashTotal] = useState(numberValue(initialCash.totalBRL));
   const [awardMiles, setAwardMiles] = useState(numberValue(initialAward.miles));
   const [taxesBRL, setTaxesBRL] = useState(numberValue(initialAward.taxesBRL));
   const [available, setAvailable] = useState(initialAward.available !== false);
   const [bonusPercent, setBonusPercent] = useState(numberValue(promotion.bonusPercent));
-  const [walletBalance, setWalletBalance] = useState(numberValue(balances[0]?.balance));
+  const [walletBalance, setWalletBalance] = useState(numberValue(activeBalance.balance));
+  const [referenceValue, setReferenceValue] = useState(numberValue(activeBalance.referenceValuePer1000BRL));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -491,21 +611,21 @@ function ScenarioDrawer({ item, onClose, onSaved }: { item: CaseRecord; onClose:
         ? { ...offer, miles: awardMiles, taxesBRL, available, observedAt, source: "Oferta award manual do simulador" }
         : offer);
     const nextPromotion = { ...promotion, bonusPercent, startsAt: observedAt, source: "Bônus manual do simulador" };
-    const nextBalances = balances.length ? balances.map((balance, index) => index === 0 ? { ...balance, balance: walletBalance, updatedAt: observedAt } : balance) : [];
-    const nextWallet = { ...wallet, balances: nextBalances, source: "Saldo manual do simulador" };
+    const nextBalances = balances.length ? balances.map((balance, index) => index === activeBalanceIndex ? { ...balance, balance: walletBalance, referenceValuePer1000BRL: referenceValue, source: "Laboratório de cenário", updatedAt: observedAt } : balance) : [];
+    const nextWallet = { ...wallet, balances: nextBalances, source: "Carteira manual do simulador" };
     const nextInput = { ...input, wallet: nextWallet, offers: nextOffers, promotion: nextPromotion, now: observedAt };
     try {
-      const updated = normalizeCase(await readJson(await fetch(`/api/cases/${encodeURIComponent(item.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input: nextInput, dataMode: "mock", isMock: true }) })), Date.now());
+      const updated = normalizeCase(await readJson(await fetch(`/api/cases/${encodeURIComponent(item.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input: nextInput }) })), Date.now());
       onSaved(updated);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Não foi possível salvar o cenário."); }
     finally { setLoading(false); }
   }
 
-  return <div className="cockpit-overlay" onMouseDown={onClose}><section className="cockpit-drawer cockpit-drawer--compact" role="dialog" aria-modal="true" aria-labelledby="scenario-title" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="cockpit-drawer__close" onClick={onClose} aria-label="Fechar laboratório">×</button><header><span>LABORATÓRIO DE CENÁRIO</span><h2 id="scenario-title">Ajustar e recalcular</h2><p>Altere os dados observados. O caso será salvo e o motor rodará novamente com os novos valores.</p></header><div className="cockpit-drawer__form"><div className="cockpit-form-pair"><label>Preço total em dinheiro<input type="number" min="0" value={cashTotal} onChange={(event) => setCashTotal(Number(event.target.value))} /></label><label>Saldo na carteira<input type="number" min="0" value={walletBalance} onChange={(event) => setWalletBalance(Number(event.target.value))} /></label></div><div className="cockpit-form-pair"><label>Milhas da emissão award<input type="number" min="0" value={awardMiles} onChange={(event) => setAwardMiles(Number(event.target.value))} /></label><label>Taxas da emissão (R$)<input type="number" min="0" value={taxesBRL} onChange={(event) => setTaxesBRL(Number(event.target.value))} /></label></div><label className="cockpit-check"><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} /><span>Oferta award disponível para emissão</span></label><label>Bônus de transferência<div className="cockpit-percent-input"><input type="number" min="0" max="300" value={bonusPercent} onChange={(event) => setBonusPercent(Number(event.target.value))} /><span>%</span></div></label><div className="cockpit-source-note"><ModeBadge mode="manual" /><p>Esses valores substituem o cenário atual e ficam identificados como entrada manual.</p></div></div>{error && <div className="cockpit-inline-error"><b>Não salvou.</b> {error}</div>}<footer className="cockpit-drawer__actions"><button type="button" className="cockpit-secondary" onClick={onClose}>Cancelar</button><button type="button" className="cockpit-primary" disabled={loading} onClick={save}>{loading ? "Salvando…" : "Salvar e recalcular"}<span>→</span></button></footer></section></div>;
+  return <div className="cockpit-overlay" onMouseDown={onClose}><section className="cockpit-drawer cockpit-drawer--compact" role="dialog" aria-modal="true" aria-labelledby="scenario-title" onMouseDown={(event) => event.stopPropagation()}><button type="button" className="cockpit-drawer__close" onClick={onClose} aria-label="Fechar laboratório">×</button><header><span>LABORATÓRIO DE CENÁRIO</span><h2 id="scenario-title">Ajustar e recalcular</h2><p>Altere os dados observados. O caso será salvo e o motor rodará novamente com os novos valores.</p></header><div className="cockpit-drawer__form"><div className="cockpit-scenario-wallet"><header><span>CARTEIRA USADA NO CÁLCULO</span><b>{activeProgram}</b></header><div className="cockpit-form-pair"><label>Saldo disponível<input type="number" min="0" value={walletBalance} onChange={(event) => setWalletBalance(Number(event.target.value))} /></label><label>Preço do milheiro (R$)<input type="number" min="0.01" step="0.01" value={referenceValue} onChange={(event) => setReferenceValue(Number(event.target.value))} /></label></div><small>O preço do milheiro representa o valor econômico de cada 1.000 pontos.</small></div><div className="cockpit-form-pair"><label>Preço total em dinheiro<input type="number" min="0" value={cashTotal} onChange={(event) => setCashTotal(Number(event.target.value))} /></label><label>Milhas da emissão award<input type="number" min="0" value={awardMiles} onChange={(event) => setAwardMiles(Number(event.target.value))} /></label></div><div className="cockpit-form-pair"><label>Taxas da emissão (R$)<input type="number" min="0" value={taxesBRL} onChange={(event) => setTaxesBRL(Number(event.target.value))} /></label><label>Bônus de transferência<div className="cockpit-percent-input"><input type="number" min="0" max="300" value={bonusPercent} onChange={(event) => setBonusPercent(Number(event.target.value))} /><span>%</span></div></label></div><label className="cockpit-check"><input type="checkbox" checked={available} onChange={(event) => setAvailable(event.target.checked)} /><span>Oferta award disponível para emissão</span></label><div className="cockpit-source-note"><ModeBadge mode="manual" /><p>Esses valores substituem o cenário atual e ficam identificados como entrada manual.</p></div></div>{error && <div className="cockpit-inline-error"><b>Não salvou.</b> {error}</div>}<footer className="cockpit-drawer__actions"><button type="button" className="cockpit-secondary" onClick={onClose}>Cancelar</button><button type="button" className="cockpit-primary" disabled={loading || referenceValue <= 0} onClick={save}>{loading ? "Salvando…" : "Salvar e recalcular"}<span>→</span></button></footer></section></div>;
 }
 
 export default function MilesAICockpit() {
-  const [view, setView] = useState<View>("clients");
+  const [view, setView] = useState<View>("dashboard");
   const [cases, setCases] = useState<CaseRecord[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -513,6 +633,7 @@ export default function MilesAICockpit() {
   const [error, setError] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [promoOpen, setPromoOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
   const [scenarioOpen, setScenarioOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
@@ -534,11 +655,12 @@ export default function MilesAICockpit() {
   }, [loadData]);
 
   useEffect(() => {
-    const hasOverlay = newOpen || promoOpen || scenarioOpen;
+    const hasOverlay = newOpen || promoOpen || walletOpen || scenarioOpen;
     if (hasOverlay) document.body.style.overflow = "hidden";
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       if (scenarioOpen) setScenarioOpen(false);
+      else if (walletOpen) setWalletOpen(false);
       else if (promoOpen) setPromoOpen(false);
       else if (newOpen) setNewOpen(false);
       else if (evaluation || evaluatingId) { setEvaluation(null); setEvaluatingId(undefined); }
@@ -548,7 +670,7 @@ export default function MilesAICockpit() {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [evaluation, evaluatingId, newOpen, promoOpen, scenarioOpen]);
+  }, [evaluation, evaluatingId, newOpen, promoOpen, scenarioOpen, walletOpen]);
 
   const selectedCase = useMemo(() => cases.find((item) => item.id === selectedId), [cases, selectedId]);
 
@@ -588,16 +710,18 @@ export default function MilesAICockpit() {
 
   return <div className="cockpit-shell">
     <Navigation view={view} setView={setView} counts={{ clients: cases.length, opportunities: opportunities.length }} />
-    <main className="cockpit-main"><Topbar view={view} onNew={() => setNewOpen(true)} onRefresh={() => void loadData(true)} refreshing={refreshing} />
+    <main className="cockpit-main">{view !== "dashboard" && <Topbar view={view} onNew={() => setNewOpen(true)} onRefresh={() => void loadData(true)} refreshing={refreshing} />}
       <div className="cockpit-content">{error && <div className="cockpit-error" role="alert"><span>!</span><p><b>Não foi possível concluir.</b>{error}</p><button onClick={() => void loadData(true)}>Tentar novamente</button></div>}
-        {view === "clients" && <ClientsView cases={cases} opportunities={opportunities} loading={loading} selectedId={selectedId} onEvaluate={(item) => void evaluateCase(item)} evaluatingId={evaluatingId} onNew={() => setNewOpen(true)} />}
+        {view === "dashboard" && <MilesAIDashboard cases={cases.map((item) => item.raw)} opportunities={opportunities.map((item) => item.raw)} loading={loading} error={error} onCreateCase={() => setNewOpen(true)} onOpenCase={(caseId) => { setSelectedId(caseId); setView("clients"); setWalletOpen(true); }} onOpenOpportunities={() => setView("opportunities")} onOpenFlights={() => setView("flights")} onRefresh={() => loadData(true)} />}
+        {view === "clients" && <ClientsView cases={cases} opportunities={opportunities} loading={loading} selectedId={selectedId} onEvaluate={(item) => void evaluateCase(item)} onWallet={(item) => { setSelectedId(item.id); setWalletOpen(true); }} evaluatingId={evaluatingId} onNew={() => setNewOpen(true)} />}
         {view === "opportunities" && <OpportunitiesView items={opportunities} loading={loading} onEvaluate={(item) => void handleOpportunity(item)} busyId={evaluatingId} onPromo={() => setPromoOpen(true)} />}
         {view === "flights" && <FlightsView cases={cases} onUseOffer={(offer, caseId) => void applyFlightOffer(offer, caseId)} />}
-        <EvaluationPanel evaluation={evaluation} caseRecord={selectedCase} loading={Boolean(evaluatingId)} onClose={() => { setEvaluation(null); setEvaluatingId(undefined); }} onEdit={() => setScenarioOpen(true)} />
+        <EvaluationPanel evaluation={evaluation} caseRecord={selectedCase} loading={Boolean(evaluatingId)} onClose={() => { setEvaluation(null); setEvaluatingId(undefined); }} onEdit={() => setScenarioOpen(true)} onWallet={() => setWalletOpen(true)} />
       </div>
     </main>
     {newOpen && <NewCaseDrawer onClose={() => setNewOpen(false)} onCreated={(item) => { setCases((current) => [item, ...current.filter((candidate) => candidate.id !== item.id)]); setNewOpen(false); setSelectedId(item.id); void evaluateCase(item); }} />}
     {promoOpen && <PromotionDrawer cases={cases} onClose={() => setPromoOpen(false)} onSaved={() => { setPromoOpen(false); setView("opportunities"); void loadData(true); }} />}
+    {walletOpen && selectedCase && <WalletDrawer item={selectedCase} onClose={() => setWalletOpen(false)} onSaved={(updated) => { setCases((current) => current.map((item) => item.id === updated.id ? updated : item)); setWalletOpen(false); void evaluateCase(updated); }} />}
     {scenarioOpen && selectedCase && <ScenarioDrawer item={selectedCase} onClose={() => setScenarioOpen(false)} onSaved={(updated) => { setCases((current) => current.map((item) => item.id === updated.id ? updated : item)); setScenarioOpen(false); void evaluateCase(updated); }} />}
   </div>;
 }

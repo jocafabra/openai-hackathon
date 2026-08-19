@@ -96,6 +96,31 @@ describe("motor estratégico do MilesAI", () => {
     expect(result.decision).not.toBe("USE_POINTS");
   });
 
+  it("usa o preço do milheiro do programa de origem entre múltiplos saldos", () => {
+    const input = createDemoInput({ promotion: demoScenario.wowPromotion });
+    input.wallet.balances = [
+      {
+        ...input.wallet.balances[0],
+        program: "Programa sem uso",
+        balance: 999_999,
+        referenceValuePer1000BRL: 99,
+      },
+      {
+        ...input.wallet.balances[0],
+        program: input.strategy.sourceProgram,
+        referenceValuePer1000BRL: 12.5,
+      },
+    ];
+
+    const result = calculateStrategy(input);
+    const points = result.options.find((option) => option.kind === "own_points");
+
+    expect(points?.economicCostBRL).toBe(3_250);
+    expect(points?.assumptions).toContain(
+      `Pontos ${input.strategy.sourceProgram} avaliados em R$ 12.5 por mil.`,
+    );
+  });
+
   it("dados materiais ausentes retornam REVIEW", () => {
     const input = createDemoInput();
     input.trip.missingFields = ["passengers"];

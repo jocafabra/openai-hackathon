@@ -38,6 +38,7 @@ export interface WalletBalance {
   balance: number;
   expiresAt: string | null;
   referenceValuePer1000BRL: number;
+  source?: string;
   updatedAt: string;
 }
 

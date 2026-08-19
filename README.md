@@ -8,7 +8,9 @@ Projeto criado durante o **OpenAI Hackathon Brasil**, no desafio **Pequenos Neg�
 
 A tela principal agora é um cockpit operacional multi-cliente:
 
+- dashboard operacional com ações do dia, viagens, oportunidades, saúde das carteiras e atividade recente;
 - cadastro progressivo de cliente, contato, viagem e carteira;
+- carteira editável com múltiplos programas, saldo, vencimento, fonte e preço do milheiro;
 - persistência em PostgreSQL, inclusive após reload ou reinício do app;
 - motor determinístico sem números calculados por IA;
 - comparação entre dinheiro, pontos próprios e cotação de milhas;
@@ -19,7 +21,8 @@ A tela principal agora é um cockpit operacional multi-cliente:
 - matching seletivo em toda a carteira;
 - oportunidades e execuções deduplicadas;
 - worker separado e healthcheck real do banco;
-- funcionamento completo sem chave OpenAI.
+- funcionamento completo sem chave OpenAI;
+- página didática completa em `/como-funciona`, com tour, glossário, fontes dos dados, limites e FAQ.
 
 A experiência visual foi desenhada para uso diário do agente: identidade própria MilesAI, marca vetorial baseada em rota, tipografia Manrope + Newsreader embarcada localmente, escala mínima de 11 px para metadados, foco visível, alvos de toque de 42–46 px e layouts específicos para desktop, tablet e mobile. Nenhuma fonte depende de CDN durante a demo.
 
@@ -37,6 +40,7 @@ docker compose up --build -d
 Acesse:
 
 - cockpit operacional: <http://localhost:3107>
+- como funciona: <http://localhost:3107/como-funciona>
 - demo original P0: <http://localhost:3107/demo>
 - saúde do app/banco: <http://localhost:3107/api/health>
 
@@ -67,11 +71,12 @@ Fluxo recomendado para testar:
 
 1. Clique em **Novo atendimento** e cadastre uma rota diferente.
 2. Clique em **Simular estratégia**.
-3. Abra **Ajustar oferta, taxas e bônus**, altere um valor e salve.
-4. Entre no **Hub de voos**, pesquise a rota e use uma oferta na simulação.
-5. Entre em **Oportunidades** e registre uma promoção compatível.
-6. Confira que somente os casos compatíveis geraram oportunidade.
-7. Recarregue a página para confirmar a persistência.
+3. Abra **Editar carteira** e ajuste saldo, validade ou valor do milheiro.
+4. Abra **Ajustar oferta, taxas e bônus**, altere um valor e salve.
+5. Entre no **Hub de voos**, pesquise a rota e use uma oferta na simulação.
+6. Entre em **Oportunidades** e registre uma promoção compatível.
+7. Confira que somente os casos compatíveis geraram oportunidade.
+8. Recarregue a página para confirmar a persistência.
 
 ## Dados reais e mockados
 
@@ -162,7 +167,8 @@ A suíte cobre o P0 e a onda operacional, incluindo:
 - alerta idempotente;
 - proveniência mock/live/mixed;
 - adapter mock de pesquisa de voos;
-- fallback sem OpenAI.
+- fallback sem OpenAI;
+- múltiplos programas, unicidade da carteira e atualização auditável do milheiro.
 
 Também foi executado smoke real contra PostgreSQL: seed, CRUD, avaliação, duas promoções seletivas e retry sem duplicação.
 

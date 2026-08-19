@@ -34,16 +34,32 @@ export const travelRequestSchema = z.object({
   missingFields: z.array(z.string()),
 });
 
+const walletBalanceSchema = z.object({
+  program: z.string().trim().min(1),
+  balance: nonNegativeInt,
+  expiresAt: isoDate.nullable(),
+  referenceValuePer1000BRL: money,
+  source: z.string().trim().min(1).optional(),
+  updatedAt: isoDate,
+});
+
 export const walletSchema = z.object({
   travelerId: z.string().min(1),
-  balances: z.array(z.object({
-    program: z.string().min(1),
-    balance: nonNegativeInt,
-    expiresAt: isoDate.nullable(),
-    referenceValuePer1000BRL: money,
-    updatedAt: isoDate,
-  })),
+  balances: z.array(walletBalanceSchema).min(1),
   source: z.string().min(1),
+}).superRefine((wallet, context) => {
+  const seen = new Set<string>();
+  wallet.balances.forEach((balance, index) => {
+    const key = balance.program.trim().toLocaleLowerCase("pt-BR");
+    if (seen.has(key)) {
+      context.addIssue({
+        code: "custom",
+        path: ["balances", index, "program"],
+        message: "Cada programa pode aparecer apenas uma vez na carteira.",
+      });
+    }
+    seen.add(key);
+  });
 });
 
 const baseOfferSchema = z.object({
