@@ -593,6 +593,8 @@ button:disabled { cursor: not-allowed; opacity: 0.58; }
 .cockpit-source-note { display: flex; align-items: flex-start; gap: 12px; margin-top: 20px; padding: 14px; background: #f0f4ef; border: 1px solid #e0e7e0; border-radius: 13px; }
 .cockpit-source-note p { margin: 1px 0 0; color: var(--ink-600); font-size: 11px; line-height: 1.5; }
 .cockpit-field-help { display: block; margin-top: 2px; color: var(--ink-500); font-size: 11px; font-weight: 550; line-height: 1.5; }
+.cockpit-field-error { display: block; margin-top: 2px; color: var(--red-600); font-size: 11px; font-weight: 700; line-height: 1.45; }
+.cockpit-drawer input[aria-invalid="true"] { border-color: rgba(182,58,48,.52); box-shadow: 0 0 0 3px rgba(182,58,48,.08); }
 .cockpit-wallet-list { display: grid; gap: 14px; margin-top: 20px; }
 .cockpit-wallet-row { padding: 17px; background: white; border: 1px solid #dfe5df; border-radius: 15px; box-shadow: 0 4px 14px rgba(16,37,33,.035); }
 .cockpit-wallet-row > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid #edf0ed; }

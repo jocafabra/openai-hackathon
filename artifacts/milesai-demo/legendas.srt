@@ -1,0 +1,27 @@
+1
+00:00:00,000 --> 00:00:07,500
+Cockpit de decisão para agentes de viagem
+
+2
+00:00:07,500 --> 00:00:15,000
+Cadastro guiado: contato, rota, datas e orçamento
+
+3
+00:00:15,000 --> 00:00:22,500
+Carteira com saldos, fontes e preço do milheiro
+
+4
+00:00:22,500 --> 00:00:31,000
+Dinheiro, pontos e milhas comparados na mesma conta
+
+5
+00:00:31,000 --> 00:00:39,500
+Hub de voos com dados mock ou live sempre identificados
+
+6
+00:00:39,500 --> 00:00:47,000
+Promoções recalculam somente os clientes compatíveis
+
+7
+00:00:47,000 --> 00:00:56,000
+Transparência, conferência e decisão humana

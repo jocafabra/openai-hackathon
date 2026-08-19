@@ -10,6 +10,7 @@ A tela principal agora é um cockpit operacional multi-cliente:
 
 - dashboard operacional com ações do dia, viagens, oportunidades, saúde das carteiras e atividade recente;
 - cadastro progressivo de cliente, contato, viagem e carteira;
+- máscara brasileira de WhatsApp, validação imediata de e-mail e normalização de aeroportos IATA;
 - carteira editável com múltiplos programas, saldo, vencimento, fonte e preço do milheiro;
 - persistência em PostgreSQL, inclusive após reload ou reinício do app;
 - motor determinístico sem números calculados por IA;
@@ -27,6 +28,8 @@ A tela principal agora é um cockpit operacional multi-cliente:
 A experiência visual foi desenhada para uso diário do agente: identidade própria MilesAI, marca vetorial baseada em rota, tipografia Manrope + Newsreader embarcada localmente, escala mínima de 11 px para metadados, foco visível, alvos de toque de 42–46 px e layouts específicos para desktop, tablet e mobile. Nenhuma fonte depende de CDN durante a demo.
 
 O roteiro original do MVP P0 continua disponível em `/demo`.
+
+Vídeo curto da demonstração: [`artifacts/milesai-demo/MilesAI-demo-56s.mp4`](artifacts/milesai-demo/MilesAI-demo-56s.mp4). Ele usa capturas reais do cockpit e identifica explicitamente o Hub mock.
 
 ## Acessar com Docker
 
@@ -184,6 +187,7 @@ O build Docker de produção foi percorrido no navegador em desktop e mobile. A 
 - cadastro de promoção e recálculo seletivo;
 - feedback de loading, vazio, erro e origem dos dados;
 - drawers, formulários, foco, contraste e overflow em 390 px.
+- máscaras de WhatsApp, bloqueio de e-mail inválido e normalização de códigos IATA.
 
 ## Guardrails
 
