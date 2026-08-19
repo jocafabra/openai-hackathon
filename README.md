@@ -33,6 +33,7 @@ Vídeos curtos da demonstração:
 
 - V1 original, 56s: [`artifacts/milesai-demo/MilesAI-demo-56s.mp4`](artifacts/milesai-demo/MilesAI-demo-56s.mp4);
 - V2, 47s, com locução brasileira mais conversada e legendas sincronizadas: [`artifacts/milesai-demo-v2/MilesAI-demo-v2.mp4`](artifacts/milesai-demo-v2/MilesAI-demo-v2.mp4).
+- V3, 44s, captura de uso real sem áudio e sem legendas queimadas: [`artifacts/milesai-demo-v3/MilesAI-demo-v3-sem-audio.mp4`](artifacts/milesai-demo-v3/MilesAI-demo-v3-sem-audio.mp4). O roteiro separado está em [`legendas-v3.txt`](artifacts/milesai-demo-v3/legendas-v3.txt).
 
 Ambos usam capturas reais do cockpit e identificam explicitamente o Hub mock.
 

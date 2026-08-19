@@ -1,0 +1,23 @@
+00:00.000 - 00:02.500
+Sua operação em um único painel.
+
+00:02.500 - 00:07.500
+Cadastre cliente, contato e WhatsApp em poucos passos.
+
+00:07.500 - 00:12.500
+Defina rota, datas, viajantes e orçamento.
+
+00:12.500 - 00:17.500
+Registre saldos e o preço do milheiro de cada programa.
+
+00:17.500 - 00:25.000
+Compare dinheiro, pontos e milhas com o custo econômico real.
+
+00:25.000 - 00:32.000
+Pesquise tarifas no Hub. Dados mock ou live ficam sempre identificados.
+
+00:32.000 - 00:39.000
+Monitore promoções e recalcule apenas os clientes compatíveis.
+
+00:39.000 - 00:44.000
+MilesAI: mais clareza para decidir cada viagem.
