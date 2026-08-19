@@ -10,7 +10,12 @@ FROM base AS dependencies
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=milesai-pnpm,target=/pnpm/store \
+  pnpm config set store-dir /pnpm/store \
+  && pnpm config set fetch-timeout 600000 \
+  && pnpm config set fetch-retries 5 \
+  && pnpm config set network-concurrency 4 \
+  && pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
@@ -38,4 +43,3 @@ USER nextjs
 EXPOSE 3000
 
 CMD ["node", "server.js"]
-

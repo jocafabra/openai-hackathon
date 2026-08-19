@@ -1,14 +1,55 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: milesai
+      POSTGRES_USER: milesai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-milesai_local}
+    volumes:
+      - milesai_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U milesai -d milesai"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
   milesai:
-    container_name: milesai-demo
     build:
       context: .
       dockerfile: Dockerfile
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-}
+      SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
+      DATABASE_URL: postgresql://milesai:${POSTGRES_PASSWORD:-milesai_local}@postgres:5432/milesai
       NEXT_PUBLIC_DEMO_MODE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "${MILESAI_PORT:-3107}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     restart: unless-stopped
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - node
+      - -e
+      - "const tick=async()=>{try{const r=await fetch('http://milesai:3000/api/monitor/run',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});console.log(new Date().toISOString(),'monitor',r.status,await r.text())}catch(e){console.error(new Date().toISOString(),'monitor_error',e.message)}finally{setTimeout(tick,30000)}};setTimeout(tick,5000)"
+    environment:
+      DATABASE_URL: postgresql://milesai:${POSTGRES_PASSWORD:-milesai_local}@postgres:5432/milesai
+    depends_on:
+      milesai:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  milesai_postgres:
