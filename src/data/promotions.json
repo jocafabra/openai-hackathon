@@ -1,0 +1,23 @@
+{
+  "initialPromotion": {
+    "id": "promo_livelo_tap_30",
+    "type": "TRANSFER_BONUS",
+    "sourceProgram": "Livelo",
+    "targetProgram": "TAP Miles&Go",
+    "bonusPercent": 30,
+    "startsAt": "2026-08-19T08:00:00-03:00",
+    "endsAt": "2026-08-20T23:59:59-03:00",
+    "source": "mock_hackathon_event"
+  },
+  "wowPromotion": {
+    "id": "promo_livelo_tap_90",
+    "type": "TRANSFER_BONUS",
+    "sourceProgram": "Livelo",
+    "targetProgram": "TAP Miles&Go",
+    "bonusPercent": 90,
+    "startsAt": "2026-08-19T15:00:00-03:00",
+    "endsAt": "2026-08-21T23:59:59-03:00",
+    "source": "mock_hackathon_event"
+  }
+}
+

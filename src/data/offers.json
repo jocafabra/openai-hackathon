@@ -1,0 +1,44 @@
+{
+  "offers": [
+    {
+      "id": "cash_fln_fco",
+      "kind": "cash",
+      "passengers": 2,
+      "connections": 1,
+      "totalBRL": 8350,
+      "available": true,
+      "source": "mock_hackathon_dataset",
+      "observedAt": "2026-08-19T10:00:00-03:00"
+    },
+    {
+      "id": "tap_award_gru_fco",
+      "kind": "award",
+      "program": "TAP Miles&Go",
+      "miles": 220000,
+      "taxesBRL": 850,
+      "positioningFlightBRL": 900,
+      "passengers": 2,
+      "connections": 1,
+      "available": true,
+      "source": "mock_hackathon_dataset",
+      "observedAt": "2026-08-19T10:00:00-03:00"
+    },
+    {
+      "id": "broker_tap_220k",
+      "kind": "miles_broker",
+      "program": "TAP Miles&Go",
+      "miles": 220000,
+      "pricePer1000BRL": 18,
+      "taxesBRL": 850,
+      "positioningFlightBRL": 900,
+      "passengers": 2,
+      "connections": 1,
+      "expiresAt": "2026-08-21T23:59:59-03:00",
+      "available": true,
+      "source": "mock_hackathon_dataset",
+      "observedAt": "2026-08-19T10:00:00-03:00"
+    }
+  ],
+  "source": "mock_hackathon_dataset"
+}
+

@@ -1,0 +1,27 @@
+{
+  "programs": [
+    {
+      "id": "livelo",
+      "name": "Livelo",
+      "type": "bank_points",
+      "referenceValuePer1000BRL": 20,
+      "transferPartners": ["tap", "latam", "azul"]
+    },
+    {
+      "id": "smiles",
+      "name": "Smiles",
+      "type": "airline_miles",
+      "referenceValuePer1000BRL": 16,
+      "transferPartners": []
+    },
+    {
+      "id": "tap",
+      "name": "TAP Miles&Go",
+      "type": "airline_miles",
+      "referenceValuePer1000BRL": 22,
+      "transferPartners": []
+    }
+  ],
+  "source": "mock_hackathon_dataset"
+}
+
