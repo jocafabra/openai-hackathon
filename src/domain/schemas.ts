@@ -26,6 +26,7 @@ export const travelRequestSchema = z.object({
   destination: z.string().length(3),
   destinationLabel: z.string().min(1),
   departureWindow: z.object({ start: isoDate, end: isoDate }),
+  returnDate: isoDate.optional(),
   passengers: z.number().int().positive(),
   objective: z.enum(["economy", "balance", "comfort"]),
   budgetBRL: money.optional(),

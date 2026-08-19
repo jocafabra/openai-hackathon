@@ -21,6 +21,8 @@ A tela principal agora é um cockpit operacional multi-cliente:
 - worker separado e healthcheck real do banco;
 - funcionamento completo sem chave OpenAI.
 
+A experiência visual foi desenhada para uso diário do agente: identidade própria MilesAI, marca vetorial baseada em rota, tipografia Manrope + Newsreader embarcada localmente, escala mínima de 11 px para metadados, foco visível, alvos de toque de 42–46 px e layouts específicos para desktop, tablet e mobile. Nenhuma fonte depende de CDN durante a demo.
+
 O roteiro original do MVP P0 continua disponível em `/demo`.
 
 ## Acessar com Docker
@@ -163,6 +165,19 @@ A suíte cobre o P0 e a onda operacional, incluindo:
 - fallback sem OpenAI.
 
 Também foi executado smoke real contra PostgreSQL: seed, CRUD, avaliação, duas promoções seletivas e retry sem duplicação.
+
+### QA visual e funcional
+
+O build Docker de produção foi percorrido no navegador em desktop e mobile. A rodada cobre:
+
+- navegação entre carteira, oportunidades e hub;
+- busca e seleção de clientes;
+- cadastro completo em três etapas, inclusive datas;
+- simulação, fechamento por botão/Escape e laboratório de cenário;
+- pesquisa mock de voos e aplicação da tarifa ao caso;
+- cadastro de promoção e recálculo seletivo;
+- feedback de loading, vazio, erro e origem dos dados;
+- drawers, formulários, foco, contraste e overflow em 390 px.
 
 ## Guardrails
 

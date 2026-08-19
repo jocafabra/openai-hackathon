@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDemoInput, demoScenario } from "@/data/demo";
+import { travelRequestSchema } from "@/domain/schemas";
 import { calculateStrategy } from "@/domain/strategy-engine";
 import type { MilesBrokerOffer } from "@/domain/types";
 
@@ -8,6 +9,13 @@ describe("motor estratégico do MilesAI", () => {
     expect(demoScenario.traveler.name).toBe("João");
     expect(demoScenario.wallet.balances).toHaveLength(2);
     expect(demoScenario.offers).toHaveLength(3);
+  });
+
+  it("preserva a data de volta ao validar um caso", () => {
+    const input = createDemoInput();
+    input.trip.returnDate = "2027-05-23";
+
+    expect(travelRequestSchema.parse(input.trip).returnDate).toBe("2027-05-23");
   });
 
   it("bônus de 30% retorna WAIT e registra a condição de 80%", () => {
@@ -97,4 +105,3 @@ describe("motor estratégico do MilesAI", () => {
     expect(result.action).toBe("ASK_USER");
   });
 });
-

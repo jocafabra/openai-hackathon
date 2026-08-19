@@ -25,6 +25,7 @@ export interface TravelRequest {
   destination: string;
   destinationLabel: string;
   departureWindow: { start: string; end: string };
+  returnDate?: string;
   passengers: number;
   objective: "economy" | "balance" | "comfort";
   budgetBRL?: number;
