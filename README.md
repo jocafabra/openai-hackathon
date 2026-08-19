@@ -13,9 +13,10 @@ Implementado até aqui:
 - fixtures JSON do cenário de João;
 - motor determinístico com três alternativas;
 - replay do evento de promoção;
-- 11 testes cobrindo `WAIT`, `EXECUTE` e guardas obrigatórias.
+- endpoint de análise com Responses API, Structured Outputs e fallback local;
+- 13 testes cobrindo `WAIT`, `EXECUTE`, fallback e guardas obrigatórias.
 
-A interface e a integração opcional com a OpenAI estão em construção, seguindo a ordem do P0 definida em `MilesAI_Hackathon_Spec.md`.
+A interface do fluxo principal está em construção, seguindo a ordem do P0 definida em `MilesAI_Hackathon_Spec.md`.
 
 ## Rodar localmente
 
@@ -28,6 +29,8 @@ pnpm dev
 ```
 
 Acesse <http://localhost:3000>.
+
+O caso de demo funciona sem configuração adicional. Para ativar a interpretação e explicação via OpenAI, preencha `OPENAI_API_KEY` e `OPENAI_MODEL` em `.env.local`. Se a chave, o modelo ou a API estiverem indisponíveis, o endpoint responde com o fallback local e nunca deixa o fluxo travado.
 
 ## Testes
 
