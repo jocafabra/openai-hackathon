@@ -29,7 +29,12 @@ A experiência visual foi desenhada para uso diário do agente: identidade próp
 
 O roteiro original do MVP P0 continua disponível em `/demo`.
 
-Vídeo curto da demonstração: [`artifacts/milesai-demo/MilesAI-demo-56s.mp4`](artifacts/milesai-demo/MilesAI-demo-56s.mp4). Ele usa capturas reais do cockpit e identifica explicitamente o Hub mock.
+Vídeos curtos da demonstração:
+
+- V1 original, 56s: [`artifacts/milesai-demo/MilesAI-demo-56s.mp4`](artifacts/milesai-demo/MilesAI-demo-56s.mp4);
+- V2, 47s, com locução brasileira mais conversada e legendas sincronizadas: [`artifacts/milesai-demo-v2/MilesAI-demo-v2.mp4`](artifacts/milesai-demo-v2/MilesAI-demo-v2.mp4).
+
+Ambos usam capturas reais do cockpit e identificam explicitamente o Hub mock.
 
 ## Acessar com Docker
 

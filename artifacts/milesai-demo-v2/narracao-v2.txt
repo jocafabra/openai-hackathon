@@ -1,0 +1,7 @@
+Imagina receber um pedido de viagem e resolver tudo em um só lugar. Esse é o MilesAI.
+O cadastro é rapidinho: contato, rota, datas e orçamento entram num fluxo bem guiado.
+Depois, você informa os saldos e o valor do milheiro de cada programa.
+O motor coloca dinheiro, pontos e milhas na mesma conta e explica qual caminho faz mais sentido.
+No Hub de voos, cada tarifa mostra a fonte e deixa claro quando o dado é simulado ou ao vivo.
+Quando aparece uma promoção compatível, só os clientes certos voltam para análise.
+No fim, o agente confere tudo e decide. Mais clareza, menos abas e nenhuma ação automática.
